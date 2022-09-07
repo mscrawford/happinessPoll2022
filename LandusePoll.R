@@ -1,4 +1,5 @@
 library(tidyverse)
+library(MetBrewer)
 
 setwd(dirname(rstudioapi::getSourceEditorContext()$path))
 
@@ -220,3 +221,326 @@ C009_01 <- ds.t %>%
 C010_01 <- ds.t %>%
     group_by(C010_01) %>%
     summarise(n()); C010_01
+
+
+
+# Questions of Discrimination ----------------------------------------------------------------------------------------------
+
+# "In the past year, have you felt discriminated against or harassed, or witnessed discrimination or harassment,
+# in the workplace? This could be, e.g., in the land-use group, at PIK, conferences or workshops, 
+# or during the publication process.This will of co:"
+
+D001 <- ds %>%
+    select(starts_with("D001_")) %>% 
+    mutate_each(funs(as.numeric)) %>%
+    rename(
+        "Gender" = D001_01,
+        "Age" = D001_02,
+        "Racial/ethnic background"= D001_03,
+        "Sexual orientation"= D001_04,
+        "Appearance"= D001_05,
+        "Religious Background" = D001_06,
+        "Class Background" = D001_07,
+        "Marital status" = D001_08,
+        "Family situation" = D001_09,
+        "Language" = D001_10,
+        "Other, please specify" = D001_11) %>%
+    pivot_longer(cols = everything(), names_to = "type", values_to = "value") %>%
+    group_by(type) %>% 
+    summarise(value = sum(value)) %>% 
+    arrange(desc(value))
+
+D001.p <- ggplot(D001) +
+    geom_col(aes(x = reorder(type, value),
+                 y =  value), fill = "red",colour = "red", alpha = 0.4) +
+    labs(x = "Type of Discrimination",
+         y = "Count") +
+    theme_minimal(20) +
+    scale_y_continuous(breaks=seq(0,10,2)) +
+    coord_flip() ; D001.p
+#multiple discrimination ?
+
+#(Optional) Remaining anonymous, please be more specific about the occurrence so that we can discuss as a group, especially noting where this discrimination occurred
+D002 <- ds %>%
+    select(starts_with("D002_")) %>% 
+    filter(!is.na(D002_01))
+
+
+################# E HAPPINESS POLL
+#2 collabs?
+
+ds.e <- ds %>% 
+    select(starts_with("E001")) %>% 
+    mutate_each(funs(as.numeric)) %>%
+    rename(
+        "Overall.happiness" = E001_01,
+        "Day.to.day.work" = E001_02,
+        "Personal.work.progress"= E001_03,
+        "Job.security.and.perspectives"= E001_04,
+        "Commuting.time"= E001_05,
+        "Creativity" = E001_06,
+        "Relevance.Doing.good" = E001_07,
+        "Team" = E001_08,
+        "Working.time.flexibility" = E001_09,
+        "Working.atmosphere" = E001_10,
+        "Collaboration.qty" = E001_11,
+        "Collaboration" = E001_12,
+        "Work.life.balance" = E001_13,
+        "Curiosity" = E001_14) %>% 
+    pivot_longer(cols = everything(), names_to = "type", values_to = "value") %>%
+    group_by(type) %>% 
+    summarise(value = mean(value, na.rm = T)) %>% 
+    pivot_wider(names_from = type, values_from = value) %>% 
+    mutate(Year = 2022)
+
+ds.e <- ds.e[,-2]
+
+hist <- read.csv("TimeSeries2016_2021.csv") 
+
+hs <- rbind(hist, ds.e) %>% 
+    pivot_longer(cols = 2:last_col(), names_to = "type", values_to = "average")
+
+write.csv(hs, file = "TimeSeries2016_2022.csv")
+
+
+colorsTS <- c(
+    "mediumorchid2",
+    "blue4",
+    "red4",
+    "orchid4",
+    "red1",
+    "orange1",
+    "palegreen2",
+    "lightskyblue",
+    "green4",
+    "deeppink1",
+    "black",
+    "deepskyblue3",
+    "green2"
+)
+
+ggplot(filter(hs, type == "Overall.happiness"),
+       aes(x = Year, y = average, color = type)) +
+    geom_line(size = 1.2) +
+    scale_color_manual(values = colorsTS[7]) +
+    expand_limits(y = 0) + 
+    theme_classic()
+
+ggplot(filter(hs, type %in% c("Overall.happiness", "Commuting.time", "Work.life.balance", 
+                              "Job.security.and.perspectives", "Working.time.flexibility")),
+       aes(x = Year, y = average, color = type)) +
+    geom_line(size = 1.2) +
+    scale_color_manual(values = colorsTS[c(2,6,7,12,13)]) +
+    expand_limits(y = 0) + 
+    theme_classic()
+
+ggplot(filter(hs, type %in% c("Overall.happiness", "Collaboration", "Creativity", "Curiosity", 
+                              "Team", "Working.atmosphere")),
+       aes(x = Year, y = average, color = type)) +
+    geom_line(size = 1.2) +
+    scale_color_manual(values = colorsTS[c(1,3,4,7,10,11)]) +
+    expand_limits(y = 0) + 
+    theme_classic()
+
+ggplot(filter(hs, type %in% c("Overall.happiness", "Collaboration", "Creativity", "Curiosity", 
+                              "Relevance.Doing.good", "Personal.work.progress")),
+       aes(x = Year, y = average, color = type)) +
+    geom_line(size = 1.2) +
+    scale_color_manual(values = colorsTS[c(1,3,4,7,8,9)]) +
+    expand_limits(y = 0) + 
+    theme_classic()
+
+
+########### E02 What do you value most/which factor contributes most to
+#                your workplace happiness? (multiple answers)
+
+
+ds.e2 <- ds %>% 
+    select(starts_with("E002_")) %>% 
+    rename("Flexible working hours" = E002_01,
+           "Interactions with colleagues/collaboration" = E002_02, 
+           "Decision independence/freedom w.r.t. topic" = E002_03, 
+           "Topic research" = E002_04, 
+           "Creativity" = E002_05,
+           "Team/colleagues" = E002_06) %>% 
+    mutate_each(funs(as.numeric)) %>% 
+    pivot_longer(cols = everything(), names_to = "type", values_to = "value") %>% 
+    group_by(type) %>% 
+    summarise(value = sum(value))
+
+ds.e2.p <- ggplot(ds.e2, aes(x = reorder(type, value), y = value, fill = type)) +
+    geom_col() +
+    coord_flip() + 
+    xlab("Contributor") + ylab("Count") +
+    theme_minimal(base_size = 24) +
+    theme(legend.position = "none") +
+    scale_fill_manual(values =  met.brewer("VanGogh2", 6)); ds.e2.p
+
+#######
+#### Meetings ########
+######
+
+
+#How many hours per week do you spend on meetings
+ds.f1 <- ds %>% 
+    select(starts_with("F001_")) %>% 
+    rename("Landuse" = F001_01,
+           "MAgPIE/LUCHS" = F001_02,
+           "Post-Doc" = F001_03, 
+           "Supervision weeklies" = F001_04, 
+           "RD seminars" = F001_05, 
+           "Other Seminars (LPJmL, Phd, etc)" = F001_06,
+           "Project Meetings" = F001_07,
+           "Technical meetings (hackathons, modelling, etc)" = F001_08,
+           "Administrative meetings" = F001_09,
+           "Public-facing (press etc.)" = F001_10,
+           "Other meetings" = F001_11) %>% 
+    mutate(across(everything(), gsub, pattern = "[^0-9.-]", replacement = ""))
+#maually clean up a weird one
+ds.f1$Landuse <- as.numeric(ds.f1$Landuse)
+ds.f1[14,1] <- 0.5
+ds.f1 <- ds.f1 %>%  
+    mutate_each(funs(as.numeric)) %>% 
+    pivot_longer(cols = everything(), names_to = "type", values_to = "time") %>%
+    replace_na(list(time = 0)) %>% 
+    group_by(type) %>% 
+    summarise(time = mean(time))
+
+ds.f1.p <- ggplot(ds.f1, aes(x = reorder(type, time), y = time, fill = type)) +
+    geom_col() +
+    coord_flip() + 
+    theme_minimal(base_size = 24) +
+    theme(legend.position = "none") +
+    scale_fill_manual(values =  met.brewer("VanGogh2", 11))+
+    xlab("Meeting") + ylab("Average Hours per Week"); ds.f1.p
+
+
+
+##### Who benefits from each meeting type?
+
+ds.f2 <- ds %>% 
+    select(starts_with("F002_"), -contains("CN")) %>% 
+    mutate_each(funs(as.numeric)) %>% 
+    pivot_longer(cols = everything(), names_to = "type", values_to = "value") %>% 
+    separate(col = type, into = c("drop", "meeting", "subject"), sep = "_") %>% 
+    mutate(meeting = case_when(
+        meeting == "01" ~ "Landuse",
+        meeting == "02" ~ "LUCHS/MAgPIE",
+        meeting == "03" ~ "Post-Doc",
+        meeting == "04" ~ "Supervision Weeklies",
+        meeting == "05" ~ "RD Seminars",
+        meeting == "06" ~ "Other Seminars",
+        meeting == "07" ~ "Project Meetings",
+        meeting == "08" ~ "Technical meetings",
+        meeting == "09" ~ "Administrative meetings",
+        meeting == "10" ~ "Public-facing (press etc.)",
+        meeting == "11" ~ "Other meetings"),
+        subject = case_when(
+            subject == "1" ~ "Myself",
+            subject == "2" ~ "The Group",
+            subject == "3" ~ "The RD",
+            subject == "4" ~ "PIK",
+            subject == "5" ~ "Decision makers",
+            subject == "6" ~ "General Public")) %>% 
+    select(-drop) %>% 
+    group_by(meeting, subject) %>% 
+    summarise(value = sum(value)) %>% 
+    mutate(meeting = as.factor(meeting), subject = as.factor(subject))
+
+ds.f2$meeting <- factor(ds.f2$meeting,levels = (c("Landuse",
+                                                  "LUCHS/MAgPIE",
+                                                  "Post-Doc",
+                                                  "Supervision Weeklies",
+                                                  "RD Seminars",
+                                                  "Other Seminars",
+                                                  "Project Meetings",
+                                                  "Technical meetings",
+                                                  "Administrative meetings",
+                                                  "Public-facing (press etc.)",
+                                                  "Other meetings")))
+
+ds.f2$subject <- factor(ds.f2$subject,levels = rev(c("Myself",
+                                                     "The Group",
+                                                     "The RD",
+                                                     "PIK",
+                                                     "Decision makers",
+                                                     "General Public")))
+
+
+ds.f2.p <- ggplot(ds.f2, aes(x= subject, y = value, fill = subject)) +
+    geom_col(alpha = 0.8) +
+    coord_flip()+
+    facet_wrap(~meeting) +
+    theme_minimal(base_size = 24) +
+    theme(legend.position = "none") +
+    scale_fill_manual(values =  met.brewer("Troy", 6)) +
+    xlab("Who benefits?") + ylab("Vote count"); ds.f2.p
+
+### are such meetings always necessary?
+
+
+ds.f3 <- ds %>% 
+    select(starts_with("F003_")) %>% 
+    rename("Landuse" = F003_01,
+           "MAgPIE/LUCHS" = F003_02,
+           "Post-Doc" = F003_03, 
+           "Supervision weeklies" = F003_04, 
+           "RD seminars" = F003_05, 
+           "Other Seminars (LPJmL, Phd, etc)" = F003_06,
+           "Project Meetings" = F003_07,
+           "Technical meetings (hackathons, modelling, etc)" = F003_08,
+           "Administrative meetings" = F003_09,
+           "Public-facing (press etc.)" = F003_10,
+           "Other" = F003_11) %>% 
+    mutate_each(funs(as.numeric)) %>% 
+    pivot_longer(cols = everything(), names_to = "type", values_to = "count") %>%
+    replace_na(list(count = 0)) %>% 
+    group_by(type) %>% 
+    summarise(count = mean(count))
+
+ds.f3.p <- ggplot(ds.f3, aes(x = reorder(type, count), y = count, fill = type)) +
+    geom_col() +
+    coord_flip() + 
+    theme_minimal(base_size = 24) +
+    theme(legend.position = "none") +
+    scale_fill_manual(values =  met.brewer("VanGogh2", 11))+
+    xlab("Meeting") + ylab("Degree of Necessity"); ds.f3.p
+
+### Current Career needs? ######
+
+
+ds.f4 <- ds %>% 
+    select(starts_with("F004_")) %>% 
+    rename("Read papers" = F004_01,
+           "Learn methods" = F004_02,
+           "Develop research questions" = F004_03, 
+           "Listen to other's presentations" = F004_04, 
+           "Present own work at seminar/conferences" = F004_05, 
+           "Publish first-author papers" = F004_06,
+           "Project Meetings" = F004_07,
+           "Develop own research line" = F004_08,
+           "Write proposals" = F004_09,
+           "Supervise Bachelor/Masters" = F004_10,
+           "Supervise PhD" = F004_11,
+           "Supervise PostDoc" = F004_12,
+           "Teach" = F004_13,
+           "Establish external collaborations" = F004_14,
+           "Institutional duties" = F004_15) %>% 
+    mutate_each(funs(as.numeric)) %>% 
+    pivot_longer(cols = everything(), names_to = "type", values_to = "value") %>%
+    replace_na(list(value = 0)) %>% 
+    group_by(type) %>% 
+    summarise(value = mean(value))
+
+ds.f4.p <- ggplot(ds.f4, aes(x = reorder(type, value), y = value, fill = type)) +
+    geom_col() +
+    coord_flip() + 
+    theme_minimal(base_size = 24) +
+    theme(legend.position = "none") +
+    scale_fill_manual(values =  met.brewer("Renoir", 15))+
+    xlab("Aspect") + ylab("Degree of Necessity"); ds.f4.p
+
+ds.f5 <- ds %>% 
+    select(starts_with("F005_")) 
+
+unique(data.frame(ds.f5))
