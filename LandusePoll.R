@@ -269,6 +269,86 @@ D002 <- ds %>%
 ################# E HAPPINESS POLL
 #2 collabs?
 
+ds.e1 <- ds %>% 
+    select("A001", starts_with("E001")) %>% 
+    rename(
+        "Position" = A001,
+        "Overall.happiness" = E001_01,
+        "Day.to.day.work" = E001_02,
+        "Personal.work.progress"= E001_03,
+        "Job.security.and.perspectives"= E001_04,
+        "Commuting.time"= E001_05,
+        "Creativity" = E001_06,
+        "Relevance.Doing.good" = E001_07,
+        "Team" = E001_08,
+        "Working.time.flexibility" = E001_09,
+        "Working.atmosphere" = E001_10,
+        "Collaboration.qty" = E001_11,
+        "Collaboration" = E001_12,
+        "Work.life.balance" = E001_13,
+        "Curiosity" = E001_14) %>% 
+    mutate(across(!Position, as.numeric)) %>%
+    pivot_longer(cols = 2:last_col(), names_to = "type", values_to = "value")
+
+levels(ds.e1$Position) <- c("Junior", "Senior", "No answer")
+
+ds.e1.p1 <- ggplot(filter(ds.e1, type %in% c("Overall.happiness")), aes(x=Position, y = value, fill = Position)) +
+       geom_violin() +
+    stat_summary(fun=mean, geom="point", size=2, shape = 18)+
+        facet_wrap(~type) + 
+    #geom_boxplot(width=0.1) + 
+        #coord_flip() + 
+      theme_classic(base_size = 24) + 
+    theme(legend.position = "none") +
+    ylab("Happiness") +
+    scale_fill_manual(values =  met.brewer("Hokusai2", 2))+
+    expand_limits(y = c(0,5))     ; ds.e1.p
+
+
+
+ds.e1.p2 <- ggplot(filter(ds.e1, type %in% c("Commuting.time", "Work.life.balance", 
+                              "Job.security.and.perspectives", "Working.time.flexibility")),
+                   aes(x=Position, y = value, fill = Position)) +
+    geom_violin() +
+    stat_summary(fun=mean, geom="point", size=2, shape = 18)+
+    facet_wrap(~type) + 
+    #geom_boxplot(width=0.1) + 
+    #coord_flip() + 
+    theme_classic(base_size = 24) + 
+    theme(legend.position = "none") +
+    ylab("Happiness") +
+    scale_fill_manual(values =  met.brewer("Hokusai2", 2))+
+    expand_limits(y = c(0,5))     ; ds.e1.p2
+
+ds.e1.p3 <- ggplot(filter(ds.e1, type %in% c("Collaboration", 
+                                             "Team", "Working.atmosphere")),
+                   aes(x=Position, y = value, fill = Position)) +
+    geom_violin() +
+    stat_summary(fun=mean, geom="point", size=2, shape = 18)+
+    facet_wrap(~type, nrow = 2) + 
+    #geom_boxplot(width=0.1) + 
+    #coord_flip() + 
+    theme_classic(base_size = 24) + 
+    theme(legend.position = "none") +
+    ylab("Happiness") +
+    scale_fill_manual(values =  met.brewer("Hokusai2", 2))+
+    expand_limits(y = c(0,5))     ; ds.e1.p3
+
+
+ds.e1.p4 <- ggplot(filter(ds.e1, type %in% c("Day.to.day.work", 
+                                             "Relevance.Doing.good", "Personal.work.progress", "Creativity", "Curiosity")),
+                   aes(x=Position, y = value, fill = Position)) +
+    geom_violin() +
+    stat_summary(fun=mean, geom="point", size=2, shape = 18)+
+    facet_wrap(~type, nrow = 2) + 
+    #geom_boxplot(width=0.1) + 
+    #coord_flip() + 
+    theme_classic(base_size = 24) + 
+    theme(legend.position = "none") +
+    ylab("Happiness") +
+    scale_fill_manual(values =  met.brewer("Hokusai2", 2))+
+    expand_limits(y = c(0,5))     ; ds.e1.p4
+
 ds.e <- ds %>% 
     select(starts_with("E001")) %>% 
     mutate_each(funs(as.numeric)) %>%
@@ -294,6 +374,7 @@ ds.e <- ds %>%
     mutate(Year = 2022)
 
 ds.e <- ds.e[,-2]
+
 
 hist <- read.csv("TimeSeries2016_2021.csv") 
 
@@ -542,7 +623,7 @@ ds.f4 <- ds %>%
            "Teach" = F004_13,
            "Establish external collaborations" = F004_14,
            "Institutional duties" = F004_15) %>% 
-     mutate(across(!Position, as.numeric)) %>% 
+    mutate(across(!Position, as.numeric)) %>% 
     pivot_longer(cols = 2:last_col(), names_to = "type", values_to = "value") %>%
     replace_na(list(value = 0)) %>% 
     group_by(Position, type) %>% 
@@ -553,7 +634,7 @@ levels(ds.f4$Position) <- c("Junior", "Senior", "No answer")
 
 ds.f4.p <- ggplot(ds.f4, aes(x = reorder(type, -value), y = value, fill = Position)) +
     geom_bar(position="dodge", stat="identity")+
-     # coord_flip() + 
+    # coord_flip() + 
     theme_minimal(base_size = 24) +
     #theme(legend.position = "none") +
     scale_fill_manual(values =  met.brewer("Hokusai2", 2))+
