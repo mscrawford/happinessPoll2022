@@ -321,34 +321,41 @@ colorsTS <- c(
 
 ggplot(filter(hs, type == "Overall.happiness"),
        aes(x = Year, y = average, color = type)) +
-    geom_line(size = 1.2) +
+    geom_line(size = 1.5) +
     scale_color_manual(values = colorsTS[7]) +
-    expand_limits(y = 0) + 
-    theme_classic()
+    expand_limits(y = c(0,5)) + 
+    theme_minimal(base_size = 24) +
+    ylab("Average Happiness")
+
 
 ggplot(filter(hs, type %in% c("Overall.happiness", "Commuting.time", "Work.life.balance", 
                               "Job.security.and.perspectives", "Working.time.flexibility")),
        aes(x = Year, y = average, color = type)) +
-    geom_line(size = 1.2) +
+    geom_line(size = 1.5) +
     scale_color_manual(values = colorsTS[c(2,6,7,12,13)]) +
-    expand_limits(y = 0) + 
-    theme_classic()
+    expand_limits(y = c(0,5)) + 
+    theme_minimal(base_size = 24) +
+    geom_point(data = filter(hs, type == "Work.life.balance"))+
+    ylab("Average Happiness")
 
-ggplot(filter(hs, type %in% c("Overall.happiness", "Collaboration", "Creativity", "Curiosity", 
+
+ggplot(filter(hs, type %in% c("Overall.happiness", "Collaboration", 
                               "Team", "Working.atmosphere")),
        aes(x = Year, y = average, color = type)) +
-    geom_line(size = 1.2) +
-    scale_color_manual(values = colorsTS[c(1,3,4,7,10,11)]) +
+    geom_line(size = 1.5) +
+    scale_color_manual(values = colorsTS[c(10,7,3,11)]) +
     expand_limits(y = 0) + 
-    theme_classic()
+    theme_minimal(base_size = 24) +
+    ylab("Average Happiness")
 
-ggplot(filter(hs, type %in% c("Overall.happiness", "Collaboration", "Creativity", "Curiosity", 
-                              "Relevance.Doing.good", "Personal.work.progress")),
+ggplot(filter(hs, type %in% c("Overall.happiness", "Day.to.day.work", 
+                              "Relevance.Doing.good", "Personal.work.progress", "Creativity", "Curiosity")),
        aes(x = Year, y = average, color = type)) +
-    geom_line(size = 1.2) +
-    scale_color_manual(values = colorsTS[c(1,3,4,7,8,9)]) +
-    expand_limits(y = 0) + 
-    theme_classic()
+    geom_line(size = 1.5) +
+    scale_color_manual(values = colorsTS[c(5,1,9,7, 4,8)]) +
+    expand_limits(y = c(0,5)) + 
+    theme_minimal(base_size = 24) +
+    ylab("Average Happiness")
 
 
 ########### E02 What do you value most/which factor contributes most to
@@ -383,8 +390,9 @@ ds.e2.p <- ggplot(ds.e2, aes(x = reorder(type, value), y = value, fill = type)) 
 
 #How many hours per week do you spend on meetings
 ds.f1 <- ds %>% 
-    select(starts_with("F001_")) %>% 
-    rename("Landuse" = F001_01,
+    select("A001", starts_with("F001_")) %>% 
+    rename("Position" = A001,
+           "Landuse" = F001_01,
            "MAgPIE/LUCHS" = F001_02,
            "Post-Doc" = F001_03, 
            "Supervision weeklies" = F001_04, 
@@ -395,23 +403,30 @@ ds.f1 <- ds %>%
            "Administrative meetings" = F001_09,
            "Public-facing (press etc.)" = F001_10,
            "Other meetings" = F001_11) %>% 
-    mutate(across(everything(), gsub, pattern = "[^0-9.-]", replacement = ""))
-#maually clean up a weird one
+    mutate(across(!Position, gsub, pattern = "[^0-9.-]", replacement = ""))
+#maually clean up weird ones
 ds.f1$Landuse <- as.numeric(ds.f1$Landuse)
-ds.f1[14,1] <- 0.5
+ds.f1$`Supervision weeklies` <- as.numeric(ds.f1$`Supervision weeklies`)
+ds.f1[14,"Supervision weeklies"] <- 5.5
+ds.f1[14,2] <- 0.5
 ds.f1 <- ds.f1 %>%  
-    mutate_each(funs(as.numeric)) %>% 
-    pivot_longer(cols = everything(), names_to = "type", values_to = "time") %>%
+    mutate(across(!Position, as.numeric)) %>% 
+    pivot_longer(cols = 2:last_col(), names_to = "type", values_to = "time") %>%
     replace_na(list(time = 0)) %>% 
-    group_by(type) %>% 
+    group_by(type, Position) %>% 
     summarise(time = mean(time))
 
-ds.f1.p <- ggplot(ds.f1, aes(x = reorder(type, time), y = time, fill = type)) +
-    geom_col() +
-    coord_flip() + 
+levels(ds.f1$Position) <- c("Junior", "Senior", "No answer")
+
+
+ds.f1.p <- ggplot(ds.f1, aes(x = reorder(type, -time), y = time, fill = Position)) +
+    geom_bar(position="dodge", stat="identity")+
+    # coord_flip() + 
     theme_minimal(base_size = 24) +
-    theme(legend.position = "none") +
-    scale_fill_manual(values =  met.brewer("VanGogh2", 11))+
+    #theme(legend.position = "none") +
+    scale_fill_manual(values =  met.brewer("Hokusai2", 2))+
+    xlab(NULL) + ylab("Degree of Necessity") +
+    theme(axis.text.x = element_text(angle = 60, vjust = 1.05, hjust=1)) +
     xlab("Meeting") + ylab("Average Hours per Week"); ds.f1.p
 
 
@@ -510,8 +525,9 @@ ds.f3.p <- ggplot(ds.f3, aes(x = reorder(type, count), y = count, fill = type)) 
 
 
 ds.f4 <- ds %>% 
-    select(starts_with("F004_")) %>% 
-    rename("Read papers" = F004_01,
+    select("A001", starts_with("F004_")) %>% 
+    rename("Position" = A001,
+           "Read papers" = F004_01,
            "Learn methods" = F004_02,
            "Develop research questions" = F004_03, 
            "Listen to other's presentations" = F004_04, 
@@ -526,19 +542,23 @@ ds.f4 <- ds %>%
            "Teach" = F004_13,
            "Establish external collaborations" = F004_14,
            "Institutional duties" = F004_15) %>% 
-    mutate_each(funs(as.numeric)) %>% 
-    pivot_longer(cols = everything(), names_to = "type", values_to = "value") %>%
+     mutate(across(!Position, as.numeric)) %>% 
+    pivot_longer(cols = 2:last_col(), names_to = "type", values_to = "value") %>%
     replace_na(list(value = 0)) %>% 
-    group_by(type) %>% 
+    group_by(Position, type) %>% 
     summarise(value = mean(value))
 
-ds.f4.p <- ggplot(ds.f4, aes(x = reorder(type, value), y = value, fill = type)) +
-    geom_col() +
-    coord_flip() + 
+levels(ds.f4$Position) <- c("Junior", "Senior", "No answer")
+
+
+ds.f4.p <- ggplot(ds.f4, aes(x = reorder(type, -value), y = value, fill = Position)) +
+    geom_bar(position="dodge", stat="identity")+
+     # coord_flip() + 
     theme_minimal(base_size = 24) +
-    theme(legend.position = "none") +
-    scale_fill_manual(values =  met.brewer("Renoir", 15))+
-    xlab("Aspect") + ylab("Degree of Necessity"); ds.f4.p
+    #theme(legend.position = "none") +
+    scale_fill_manual(values =  met.brewer("Hokusai2", 2))+
+    xlab(NULL) + ylab("Degree of Necessity") +
+    theme(axis.text.x = element_text(angle = 60, vjust = 1.05, hjust=1)); ds.f4.p
 
 ds.f5 <- ds %>% 
     select(starts_with("F005_")) 
