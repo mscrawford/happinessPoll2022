@@ -12,23 +12,19 @@ ds <- as_tibble(ds) %>%
            -"MISSING", -"MISSREL", -"TIME_RSI", -"DEG_TIME") %>%
     filter(!is.na(A001))
 
-
-
-
-
 # Socio-demographics ----------------------------------------------------------------------------------------------
 
 ds.a <- ds %>%
     select(starts_with("A")) %>%
-    rename("Position" = A001,
+    rename("Position"     = A001,
            "Weekly hours" = A002,
-           "Sex" = A003,
-           "Kids" = A004,
-           "Care" = A005,
-           "University" = A006,
-           "Doctorate" = A007,
-           "Comments" = A008_01,
-           "Vacation" = A009)
+           "Sex"          = A003,
+           "Kids"         = A004,
+           "Care"         = A005,
+           "University"   = A006,
+           "Doctorate"    = A007,
+           "Comments"     = A008_01,
+           "Vacation"     = A009)
 
 levels(ds.a$Position) <- c("Junior", "Senior", "NA")
 
@@ -43,24 +39,23 @@ a.p4 <- ggplot(ds.a) +
     labs(x = "Position",
          y = "Frequency") +
     facet_grid(cols = vars(Sex)) +
-    theme_classic(16) +
+    theme_classic(12) +
     theme(aspect.ratio = 1,
           strip.background = element_blank()); a.p4
 
-cowplot::save_plot(filename = "~/Postition.png", plot = a.p4)
+cowplot::save_plot(filename = "plots/Position.png", plot = a.p4, ncol = 2, base_asp = 1)
 
 # "On average, how many hours per week are you currently working?"
 a.p1 <- ggplot(ds.a) +
     geom_bar(aes(x = `Weekly hours`),
-                 stat = "count") +
+             stat = "count") +
     labs(x = "Number of hours",
          y = "Frequency") +
-
-    theme_classic(20) +
+    theme_classic(12) +
     theme(axis.text.x = element_text(angle = 60, vjust = 1.05, hjust=1),
           aspect.ratio = 1); a.p1
 
-cowplot::save_plot(filename = "~/WeeklyHours.png", plot = a.p1, base_asp = 1)
+cowplot::save_plot(filename = "plots/WeeklyHours.png", plot = a.p1, base_asp = 1)
 
 # "What is your gender?"
 ds.a %>%
@@ -85,24 +80,27 @@ ds.a.degree <- ds.a %>%
     group_by(Sex, degree_type, value) %>%
     count() %>%
     group_by(Sex, degree_type) %>%
-    mutate(total = sum(n))
+    mutate(total = sum(n)) %>%
+    filter(value == "Yes")
 
 ds.a.degree$degree_type <- factor(ds.a.degree$degree_type, levels = c("University", "Doctorate"))
 
 a.p3 <- ggplot(ds.a.degree) +
-    geom_col(aes(x = value,
+    geom_col(aes(x = degree_type,
                  y = (n/total) * 100,
                  fill = Sex),
              position = "dodge") +
-    # facet_grid(cols = vars(degree_type)) +
-    labs(x = "First one in your family to obtain a degree?",
-         y = "Percentage") +
+    labs(x = "Degree",
+         y = "First in family to obtain a degree (%)",
+         color = "") +
+    expand_limits(y = c(0, 100)) +
     scale_fill_manual(values = met.brewer("Hokusai2", 2)) +
-    theme_classic(16) +
+    theme_classic(12) +
     theme(aspect.ratio = 1,
+          legend.title = element_blank(),
           strip.background = element_blank()); a.p3
 
-cowplot::save_plot(filename = "~/Degree.png", plot = a.p3)
+cowplot::save_plot(filename = "plots/Degree.png", plot = a.p3)
 
 # "Do you take all allotted vacation days in a year? If not how many generally remain?"
 a.p2 <- ggplot(ds.a %>%
@@ -112,166 +110,249 @@ a.p2 <- ggplot(ds.a %>%
                    stat = "count") +
     facet_grid(cols = vars(Sex)) +
     labs(x = "Number of vacation days remaining",
-         y = "Frequency") +
-    theme_classic(20) +
-    theme(axis.text.x = element_text(angle = 60, vjust = 1.05, hjust=1),
+         y = "Frequency",
+         color = "") +
+    theme_classic(12) +
+    theme(axis.text.x = element_text(angle = 60, vjust = 1.05, hjust = 1),
           strip.background = element_blank(),
           aspect.ratio = 1); a.p2
 
-cowplot::save_plot(filename = "~/VacationDays.png", plot = a.p2, ncol = 2, base_asp = 1)
+cowplot::save_plot(filename = "plots/VacationDays.png", plot = a.p2, ncol = 2, base_asp = 1)
 
 # Anything to add?
-A008_01 <- ds.t %>%
-    group_by(A008_01) %>%
-    summarise(n()); A008_01
-
-
-
+ds.a %>%
+    group_by(Comments) %>%
+    summarise(n())
 
 
 # Questions of COVID ----------------------------------------------------------------------------------------------
 
-ds.t <- ds %>%
-    select(starts_with("B") | starts_with("C"))
+ds.bc <- ds %>%
+    select(starts_with("B") | starts_with("C") | "A001" | "A003" | "A004" | "A005") %>%
+    rename("Position"               = A001,
+           "Sex"                    = A003,
+           "Kids"                   = A004,
+           "Care"                   = A005,
+           "Covid frequency"       = B001,
+           "Long Covid"             = B002,
+           "Deeper integration"     = C001,
+           "Cautious"               = C002,
+           "Comfort.Shared office"  = C003_01,
+           "Comfort.LessThanThree"  = C003_02,
+           "Comfort.ThreeToTen"     = C003_03,
+           "Comfort.MoreThan10"     = C003_04,
+           "Comfort.Prolonged"      = C003_05,
+           "ThisWinter"             = C004,
+           "AfterCovid"             = C005,
+           "CoreHours"              = C006,
+           "Home Productivity"      = C007,
+           "Support.Supervisors"    = C008_01,
+           "Support.Colleagues"     = C008_02,
+           "Support.PIK"            = C008_03,
+           "Support.LU"             = C008_04,
+           "DevelopmentsToKeep"     = C009_01,
+           "Comments"               = C010_01)
 
+levels(ds.bc$Position) <- c("Junior", "Senior", "NA")
+
+###
 # So far, I have had COVID-19 __ times
-B001 <- ggplot(ds.t) +
-    geom_histogram(aes(x = B001),
-                   stat = "count") +
-    labs(x = "Number of times",
+p <- ggplot(ds.bc) +
+    geom_bar(aes(x = `Covid frequency`),
+             stat = "count") +
+    labs(x = "Covid count",
          y = "Frequency") +
-    theme_bw(20) +
-    theme(aspect.ratio = 1); B001
+    theme_classic(12) +
+    theme(aspect.ratio = 1); p
 
+cowplot::save_plot(filename = "plots/CovidFrequency.png", plot = p, ncol = 1, base_asp = 1)
+
+###
 # I have or have had long covid
-B002 <- ds.t %>%
-    group_by(B002) %>%
-    summarise(n()); B002
+ds.bc %>%
+    group_by(`Long Covid`) %>%
+    summarise(Sum = n())
 
+###
+# Deeper integration
 # "I would welcome a deeper integration of in-person meetings once again into our group’s workplace culture"
-C001 <- ggplot(ds.t) +
-    geom_histogram(aes(x = C001),
-                   stat = "count") +
+levels(ds.bc$`Deeper integration`) <- c("Strongly disagree", "Disagree", "Indifferent", "Agree", "Strongly agree", "NA")
+
+## NOTE:
+# Importantly, those who care for others were overwhelmingly in favor of deeper integration; though fewer
+# strongly agreed all except one (indifferent) agreed. Perhaps they're running from responsibilities at home.
+
+p <- ggplot(ds.bc) +
+    geom_bar(aes(x = `Deeper integration`),
+             stat = "count") +
     labs(x = "Sentiment",
          y = "Frequency") +
-    theme_bw(20) +
-    theme(aspect.ratio = 1); C001
+    scale_fill_discrete(drop = FALSE) +
+    scale_x_discrete(drop = FALSE) +
+    theme_classic(10) +
+    theme(axis.text.x = element_text(angle = 60, vjust = 1.05, hjust = 1),
+          axis.title.x = element_blank(),
+          strip.background = element_blank(),
+          aspect.ratio = 1); p
 
+cowplot::save_plot(filename = "plots/deeperIntegration.png", plot = p, base_asp = 1)
+
+###
+# Cautious
 # "I tend to feel _____ than I perceive my peers to be, in relation to the COVID-19 pandemic and meeting in person"
-C002 <- ggplot(ds.t) +
-    geom_histogram(aes(x = C002),
+
+ds.bc.frequency <- ds.bc %>%
+    filter(!`Covid frequency` %in% c("I'd rather not say", "[NA] Not answered"),
+           !`Cautious`        %in% c("Much more cautious", "[NA] Not answered")) %>%
+    mutate(`Covid frequency` = as.numeric(`Covid frequency`)) %>%
+    droplevels()
+
+# Quick and dirty regression on the categorical variable of cautiousness showed that people
+# who were less cautious tended to have Covid more times than those who were more cautious or as cautious.
+# Poor P-values and relatively low R-squared.
+m <- lm(data = ds.bc.frequency, formula = `Covid frequency` ~ Cautious); m
+summary(m)
+
+p <- ggplot(ds.bc) +
+    geom_histogram(aes(x = Cautious),
                    stat = "count") +
     labs(x = "Sentiment",
          y = "Frequency") +
     theme_bw(20) +
-    theme(aspect.ratio = 1); C002
+    theme(aspect.ratio = 1); p
 
-# How comfortable do you feel with ...
-C003 <- ds.t %>%
-    select(starts_with("C003")) %>%
+###
+# Covid frequency
+p <- ggplot(ds.bc) +
+    geom_bar(aes(x = `Covid frequency`),
+             stat = "count") +
+    labs(y = "Frequency") +
+    theme_classic(12) +
+    theme(aspect.ratio = 1); p
+
+cowplot::save_plot(filename = "Covid.png", plot = p, base_asp = 1)
+
+###
+# Meeting sizes - how comfortable do you feel with ...
+comfort <- ds.bc %>%
+    select(starts_with("Comfort")) %>%
     mutate_each(funs(as.numeric)) %>%
-    rename("Sharing offices" = C003_01,
-           "Meetings (< 3)" = C003_02,
-           "Meetings (3 - 10)" = C003_03,
-           "Meetings (> 10)" = C003_04,
-           "Prolonged group activities" = C003_05) %>%
     pivot_longer(cols = everything(), names_to = "type", values_to = "value") %>%
-    filter(!is.na(value))
+    filter(!is.na(value)) %>%
+    mutate(type = as.factor(type))
 
-C003$type <- factor(C003$type, levels = c("Sharing offices", "Meetings (< 3)", "Meetings (3 - 10)", "Meetings (> 10)", "Prolonged group activities"))
+levels(comfort$type) <- c("Meetings (< 3)", "Meetings (> 10)", "Prolonged group activities", "Sharing offices", "Meetings (3 - 10)")
+# comfort$type <- factor(comfort$type, levels = c("Sharing offices", "Meetings (< 3)", "Meetings (3 - 10)", "Meetings (> 10)", "Prolonged group activities"))
+comfort$type <- factor(comfort$type, levels = c("Prolonged group activities", "Meetings (> 10)",  "Meetings (3 - 10)", "Meetings (< 3)", "Sharing offices"))
 
-C003.p <- ggplot(C003) +
-    geom_boxplot(aes(x = type,
-                    y = value)) +
+p <- ggplot(comfort) +
+    # geom_boxplot(aes(x = type,
+                     # y = value)) +
+    geom_violin(aes(x = type,
+                     y = value)) +
     labs(x = "Situation",
          y = "Sentiment") +
-    theme_bw(20) +
-    theme(); C003.p
+    coord_flip() +
+    theme_classic(12); p
+
+cowplot::save_plot(filename = "plots/ComfortMeetings.png", plot = p, base_asp = 1.5)
+
+###
+# This winter
 
 # "Even if the prevalence of COVID-19 pandemic increases over the fall and winter (while its severity remains
 # roughly the same), if the government and PIK administration do not introduce new guidelines, I would continue
 # coming to work"
-C004 <- ggplot(ds.t) +
-    geom_histogram(aes(x = C004),
-                   stat = "count") +
+p <- ggplot(ds.bc) +
+    geom_bar(aes(x = ThisWinter),
+             stat = "count") +
     labs(x = "Sentiment",
          y = "Frequency") +
-    theme_bw(14) +
-    theme(aspect.ratio = 1); C004
+    theme_classic(10) +
+    theme(axis.text.x = element_text(angle = 60, vjust = 1.05, hjust = 1),
+          axis.title.x = element_blank(),
+          aspect.ratio = 1); p
+
+cowplot::save_plot(filename = "plots/ThisWinter.png", p, base_asp = 1)
+
+###
+# After Covid
 
 # "After the COVID-19 pandemic has subsided, I plan to work in the office"
-C005 <- ggplot(ds.t) +
-    geom_histogram(aes(x = C005),
-                   stat = "count") +
+p <- ggplot(ds.bc) +
+    geom_bar(aes(x = AfterCovid),
+             stat = "count") +
     labs(x = "Sentiment",
          y = "Frequency") +
-    theme_bw(14) +
-    theme(aspect.ratio = 1); C005
+    theme_classic(10) +
+    theme(axis.text.x = element_text(angle = 60, vjust = 1.05, hjust = 1),
+          axis.title.x = element_blank(),
+          aspect.ratio = 1); p
+
+cowplot::save_plot(filename = "plots/AfterCovid.png", p, base_asp = 1)
+
+###
+# Core hours
 
 # "Do you think that it would be beneficial for the Land-use group to have either “core hours” or “core days” for in person work?"
-C006 <- ggplot(ds.t) +
-    geom_histogram(aes(x = C006),
-                   stat = "count") +
+p <- ggplot(ds.bc) +
+    geom_bar(aes(x = CoreHours),
+             stat = "count") +
     labs(x = "Sentiment",
          y = "Frequency") +
-    theme_bw(14) +
-    theme(aspect.ratio = 1); C006
+    theme_classic(14) +
+    theme(aspect.ratio = 1); p
 
-# "Compared to when you work in the office, while doing home office, do you accomplish"
-C007 <- ggplot(ds.t) +
-    geom_histogram(aes(x = C007),
-                   stat = "count") +
+cowplot::save_plot(filename = "plots/CoreHours.png", p, base_asp = 1)
+
+###
+# Home productivity
+
+ds.bc$`Home Productivity` <- factor(ds.bc$`Home Productivity`, levels = c("Less", "About the Same", "More"))
+
+p <- ggplot(ds.bc) +
+    geom_bar(aes(x = `Home Productivity`),
+             stat = "count") +
     labs(x = "Sentiment",
          y = "Frequency") +
-    theme_bw(14) +
-    theme(aspect.ratio = 1); C007
+    theme_classic(14) +
+    theme(aspect.ratio = 1); p
 
-# C008 - Please assess the following statements
-# "I have adequate access to my supervisors, in terms of regular interactions and when acute problems arise."
-C008_01 <- ggplot(ds.t) +
-    geom_histogram(aes(x = C008_01),
-                   stat = "count") +
-    labs(x = "Sentiment",
+cowplot::save_plot(filename = "plots/HomeProductivity.png", p, base_asp = 1)
+
+###
+# Support
+support <- ds.bc %>%
+    select(starts_with("Support")) %>%
+    rename("Supervisors" = "Support.Supervisors",
+           "Colleagues"  = "Support.Colleagues",
+           "PIK"         = "Support.PIK",
+           "Land-use"    = "Support.LU") %>%
+    mutate_all(funs(as.numeric)) %>%
+    pivot_longer(cols = everything(), names_to = "variable", values_to = "value")
+
+p <- ggplot(support) +
+    geom_bar(aes(x = value)) +
+    facet_wrap(facets = vars(variable)) +
+    expand_limits(x = c(1, 5)) +
+    labs(x = "Satisfaction",
          y = "Frequency") +
-    theme_bw(14) +
-    theme(aspect.ratio = 1); C008_01
+    theme_classic(16); p
 
-# "I receive help from colleagues when I need assistance in solving a work-related issue."
-C008_02 <- ggplot(ds.t) +
-    geom_histogram(aes(x = C008_02),
-                   stat = "count") +
-    labs(x = "Sentiment",
-         y = "Frequency") +
-    theme_bw(14) +
-    theme(aspect.ratio = 1); C008_02
+cowplot::save_plot(filename = "plots/Satisfaction.png", p, base_asp = 1, ncol = 2, nrow = 2)
 
-# "I am receiving sufficient support and flexibility from the PIK administration in dealing with on-going Covid issues as they arise."
-C008_03 <- ggplot(ds.t) +
-    geom_histogram(aes(x = C008_03),
-                   stat = "count") +
-    labs(x = "Sentiment",
-         y = "Frequency") +
-    theme_bw(14) +
-    theme(aspect.ratio = 1); C008_03
-
-# "I am receiving sufficient support and flexibility from the Land-use group in dealing with on-going Covid issues as they arise."
-C008_04 <- ggplot(ds.t) +
-    geom_histogram(aes(x = C008_04),
-                   stat = "count") +
-    labs(x = "Sentiment",
-         y = "Frequency") +
-    theme_bw(14) +
-    theme(aspect.ratio = 1); C008_04
-
-# "Are there any developments/outcomes that have arisen during the COVID-19 pandemic – since last year’s poll – that you would like to adopt long-term (e.g. remote conferences)?"
-C009_01 <- ds.t %>%
-    group_by(C009_01) %>%
-    summarise(n()); C009_01
+###
+# "Are there any developments/outcomes that have arisen during the COVID-19 pandemic
+ds.bc %>%
+    select(DevelopmentsToKeep) %>%
+    filter(!is.na(.)) %>%
+    View()
 
 # "Are there any other topics that you would like to be discussed in terms of the COVID-19 pandemic and workplace culture during the LU retreat?"
-C010_01 <- ds.t %>%
-    group_by(C010_01) %>%
-    summarise(n()); C010_01
+ds.bc %>%
+    select(Comments) %>%
+    filter(!is.na(.)) %>%
+    View()
 
 
 
@@ -344,12 +425,12 @@ ds.e1 <- ds %>%
 levels(ds.e1$Position) <- c("Junior", "Senior", "No answer")
 
 ds.e1.p1 <- ggplot(filter(ds.e1, type %in% c("Overall.happiness")), aes(x=Position, y = value, fill = Position)) +
-       geom_violin() +
+    geom_violin() +
     stat_summary(fun=mean, geom="point", size=2, shape = 18)+
-        facet_wrap(~type) +
+    facet_wrap(~type) +
     #geom_boxplot(width=0.1) +
-        #coord_flip() +
-      theme_classic(base_size = 24) +
+    #coord_flip() +
+    theme_classic(base_size = 24) +
     theme(legend.position = "none") +
     ylab("Happiness") +
     scale_fill_manual(values =  met.brewer("Hokusai2", 2))+
@@ -358,7 +439,7 @@ ds.e1.p1 <- ggplot(filter(ds.e1, type %in% c("Overall.happiness")), aes(x=Positi
 
 
 ds.e1.p2 <- ggplot(filter(ds.e1, type %in% c("Commuting.time", "Work.life.balance",
-                              "Job.security.and.perspectives", "Working.time.flexibility")),
+                                             "Job.security.and.perspectives", "Working.time.flexibility")),
                    aes(x=Position, y = value, fill = Position)) +
     geom_violin() +
     stat_summary(fun=mean, geom="point", size=2, shape = 18)+
