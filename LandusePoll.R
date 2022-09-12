@@ -774,6 +774,8 @@ ds.f4.p <- ggplot(ds.f4, aes(x = reorder(type, -value), y = value, fill = Positi
     theme(axis.text.x = element_text(angle = 60, vjust = 1.05, hjust=1)); ds.f4.p
 
 ds.f5 <- ds %>%
-    select(starts_with("F005_"))
+    select(starts_with("F005_")) %>%
+    unique() %>%
+    message()
 
 unique(data.frame(ds.f5))
